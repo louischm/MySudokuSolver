@@ -11,7 +11,7 @@ type cell struct {
 	original bool
 }
 
-func createGrid(difficulty int) {
+func createGrid(difficulty int) [9][9]cell {
 	fmt.Printf("Creating grid with difficulty %d\n", difficulty)
 	var grid [9][9]cell
 	var x, y int
@@ -20,7 +20,7 @@ func createGrid(difficulty int) {
 		for y = 0; y < 9; y++ {
 			newCell := generateCell(difficulty)
 			for true {
-				if !checkCell(x, y, newCell.value, grid) {
+				if !checkCell(&x, &y, &newCell.value, &grid) {
 					newCell = reGenerateCell()
 				} else {
 					break
@@ -29,7 +29,8 @@ func createGrid(difficulty int) {
 			grid[x][y] = newCell
 		}
 	}
-	displayGrid(grid)
+	displayGrid(&grid)
+	return grid
 }
 
 func generateCell(difficulty int) cell {
@@ -60,16 +61,20 @@ func reGenerateCell() cell {
 	return newCell
 }
 
-func checkCell(xNewCell int, yNewCell int, newValue int, grid [9][9]cell) bool {
-	if newValue == 0 {
+func checkCell(xNewCell *int, yNewCell *int, newValue *int, grid *[9][9]cell) bool {
+	if *newValue == 0 {
 		return true
 	}
 
-	if !checkColumn(yNewCell, newValue, grid) {
+	if *newValue > 9 {
 		return false
 	}
 
-	if !checkLine(xNewCell, newValue, grid) {
+	if !checkColumn(yNewCell, xNewCell, newValue, grid) {
+		return false
+	}
+
+	if !checkLine(xNewCell, yNewCell, newValue, grid) {
 		return false
 	}
 
@@ -79,11 +84,11 @@ func checkCell(xNewCell int, yNewCell int, newValue int, grid [9][9]cell) bool {
 	return true
 }
 
-func checkColumn(yNewCell int, newValue int, grid [9][9]cell) bool {
+func checkColumn(yNewCell *int, xNewCell *int, newValue *int, grid *[9][9]cell) bool {
 	var x int
 
 	for x = 0; x < 9; x++ {
-		if newValue == grid[x][yNewCell].value {
+		if *newValue == grid[x][*yNewCell].value && *xNewCell != x {
 			return false
 		}
 	}
@@ -91,29 +96,29 @@ func checkColumn(yNewCell int, newValue int, grid [9][9]cell) bool {
 	return true
 }
 
-func checkLine(xNewCell int, newValue int, grid [9][9]cell) bool {
+func checkLine(xNewCell *int, yNewCell *int, newValue *int, grid *[9][9]cell) bool {
 	var y int
 
 	for y = 0; y < 9; y++ {
-		if newValue == grid[xNewCell][y].value {
+		if *newValue == grid[*xNewCell][y].value && *yNewCell != y {
 			return false
 		}
 	}
 	return true
 }
 
-func checkSubGrid(xNewCell int, yNewCell int, newValue int, grid [9][9]cell) bool {
+func checkSubGrid(xNewCell *int, yNewCell *int, newValue *int, grid *[9][9]cell) bool {
 	var xSubGrid, ySubGrid, x, y int
 
 	for x = 3; x < 10; x += 3 {
-		if xNewCell/x == 0 {
+		if *xNewCell/x == 0 {
 			xSubGrid = x - 3
 			break
 		}
 	}
 
 	for y = 3; y < 10; y += 3 {
-		if yNewCell/y == 0 {
+		if *yNewCell/y == 0 {
 			ySubGrid = y - 3
 			break
 		}
@@ -121,7 +126,7 @@ func checkSubGrid(xNewCell int, yNewCell int, newValue int, grid [9][9]cell) boo
 
 	for x = xSubGrid; x < xSubGrid+3; x++ {
 		for y = ySubGrid; y < ySubGrid+3; y++ {
-			if newValue == grid[x][y].value {
+			if *newValue == grid[x][y].value && (x != *xNewCell && y != *yNewCell) {
 				return false
 			}
 		}
@@ -129,7 +134,7 @@ func checkSubGrid(xNewCell int, yNewCell int, newValue int, grid [9][9]cell) boo
 	return true
 }
 
-func displayGrid(grid [9][9]cell) {
+func displayGrid(grid *[9][9]cell) {
 	var x, y int
 
 	for x = 0; x < 9; x++ {
@@ -144,4 +149,5 @@ func displayGrid(grid [9][9]cell) {
 			fmt.Printf("\n")
 		}
 	}
+	fmt.Printf("\n\n\n")
 }
