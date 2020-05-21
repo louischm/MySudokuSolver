@@ -1,18 +1,20 @@
 package main
 
-func solveGrid(grid *[9][9]cell) {
+import "time"
+
+func solveGrid(gridCounter *GridCounter) {
 	var result bool
 	var x, y, value int
 
 	for x = 0; x < 9; x++ {
 		for y = 0; y < 9; y++ {
-			if !grid[x][y].original {
-				grid[x][y].value++
-				result, value = solveCell(grid, &x, &y, &grid[x][y].value)
-				grid[x][y].value = value
-				//displayGrid(grid)
+			gridCounter.mux.Lock()
+			if !gridCounter.grid[x][y].original {
+				gridCounter.grid[x][y].value++
+				result, value = solveCell(&gridCounter.grid, &x, &y, &gridCounter.grid[x][y].value)
+				gridCounter.grid[x][y].value = value
 				if !result {
-					x, y = backtrack(grid, &x, &y)
+					x, y = backtrack(&gridCounter.grid, &x, &y)
 					if y == 9 {
 						y = -1
 						x++
@@ -21,13 +23,15 @@ func solveGrid(grid *[9][9]cell) {
 					}
 				} else {
 					if x == 8 && y == 8 {
-						displayGrid(grid)
+						gridCounter.mux.Unlock()
+						time.Sleep(5 * time.Millisecond)
 						return
 					}
 				}
 			} else {
 				if x == 8 && y == 8 {
-					displayGrid(grid)
+					gridCounter.mux.Unlock()
+					time.Sleep(5 * time.Millisecond)
 					return
 				}
 				if y == 9 {
@@ -35,9 +39,10 @@ func solveGrid(grid *[9][9]cell) {
 					x++
 				}
 			}
+			gridCounter.mux.Unlock()
+			time.Sleep(5 * time.Millisecond)
 		}
 	}
-	displayGrid(grid)
 }
 
 func backtrack(grid *[9][9]cell, posX *int, posY *int) (int, int) {

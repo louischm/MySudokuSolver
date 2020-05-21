@@ -2,7 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"math/rand"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -11,14 +16,52 @@ type cell struct {
 	original bool
 }
 
-func createGrid(difficulty int) [9][9]cell {
-	fmt.Printf("Creating grid with difficulty %d\n", difficulty)
+func loadGridFromFile(filename string) [9][9]cell {
+	var grid [9][9]cell
+	var i int
+	var char string
+	x := 0
+	y := 0
+
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	for i = 0; i < len(data); i++ {
+		if data[i] == 0 || x == 9 {
+			break
+		} else if data[i] >= '0' && data[i] <= '9' {
+			char = string(data[i])
+			log.Printf("x: %d, y: %d\n", x, y)
+			grid[x][y].value, err = strconv.Atoi(char)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			if grid[x][y].value != 0 {
+				grid[x][y].original = true
+			}
+			y++
+
+		} else if data[i] == '\n' {
+			x++
+			y = 0
+		}
+	}
+
+	displayGrid(&grid)
+	return grid
+}
+
+func createGrid() [9][9]cell {
+	fmt.Println("Creating sudoku grid")
 	var grid [9][9]cell
 	var x, y int
 
 	for x = 0; x < 9; x++ {
 		for y = 0; y < 9; y++ {
-			newCell := generateCell(difficulty)
+			newCell := generateCell()
 			for true {
 				if !checkCell(&x, &y, &newCell.value, &grid) {
 					newCell = reGenerateCell()
@@ -29,19 +72,18 @@ func createGrid(difficulty int) [9][9]cell {
 			grid[x][y] = newCell
 		}
 	}
-	displayGrid(&grid)
 	return grid
 }
 
-func generateCell(difficulty int) cell {
+func generateCell() cell {
 	rand.Seed(time.Now().UnixNano())
 	var newCell cell
 
 	minEmpty := 0
-	maxEmpty := difficulty
+	maxEmpty := 4
 	resultEmpty := rand.Intn(maxEmpty-minEmpty+1) + minEmpty
 
-	if resultEmpty != difficulty {
+	if resultEmpty != 4 {
 		newCell = cell{0, false}
 	} else {
 		minValue := 1
@@ -150,4 +192,41 @@ func displayGrid(grid *[9][9]cell) {
 		}
 	}
 	fmt.Printf("\n\n\n")
+}
+
+func verifyFile(fileName string) (bool, error) {
+	var i, num, retLine int
+	var data []byte
+
+	if !strings.HasSuffix(fileName, ".txt") {
+		return false, nil
+	}
+
+	_, err := os.Open(fileName)
+	if err != nil {
+		return false, err
+	}
+
+	data, err = ioutil.ReadFile(fileName)
+	if err != nil {
+		return false, err
+	}
+
+	for i = 0; i < len(data); i++ {
+		if data[i] < '0' || data[i] > '9' {
+			if data[i] != '\n' && data[i] != 0 && data[i] != ' ' {
+				return false, nil
+			} else if data[i] == '\n' {
+				retLine++
+			}
+		} else {
+			num++
+		}
+	}
+
+	if num != 81 || retLine <= 7 {
+		return false, nil
+	}
+
+	return true, nil
 }
